@@ -38,11 +38,11 @@
 * Method override parameters must either have the same generic type spec or no generic type spec (type erasure).
 * All fields of an interface are always `public`, `final`, and `static`; even if no modifiers are specified. So they must be explicitly initialized with a value.
 * Interface fields can be accessed via the interface's name or via the name of instance variables of classes that implement the interface (unlike `static` methods on interfaces which must be accessed explicitly via the interface name)
-* Only methods of an interface can be `private`. See previous statement about fields.
+* Only instance methods of an interface can be `private`. See previous statement about fields.
 * The `var` keyword cannot be used to declare a class member. It can only be used to declare a local variable.
 * You cannot override a `static` method of a class with a non-static method (and vice-versa) in a subclass. However, you can override a `static` method of an interface with a non-static method in a subclass or sub-interface, because interface's `static` methods must be referenced using the name of the interface in which it is declared.
 * Look for incorrect answers that try to reuse local variable names for lambda expression arguments. Lambda expressions do not create a new scope.
-* Pay careful attention to the declared type of variables and the accessibility of the fields/methods that are attempting to be accessed in the subsequent code. (ex: Given `Book o1 = new Encyclopedia()` only the members on the `Book` class are accessible)
+* Pay careful attention to the declared type of variables and the accessibility of the fields/methods that are attempting to be accessed in the subsequent code. (ex: Given `Book o1 = new Encyclopedia()` only the members on the `Book` class are accessible without explicit casting)
 * Fields are not overridden. They are hidden or shadowed and it is ok for a subclass to hide a field defined in its ancestors.
 * Instance members declared in subclasses are initialized **AFTER** the super-class' ctor is executed, unless they are final and initialized upon declaration.
 
@@ -62,9 +62,9 @@
 * Implicit narrowing does **NOT** apply when converting from floating-point types (`float` or `double`) to integer types (`byte`, `short`, `char`, `int`, or `long`).
 * Implicit narrowing is **NOT** allowed when converting from `long` to `byte`, `short`, or `char`.
 * Implicit narrowing only applies to primitive types. It does **NOT** apply to objects or wrapper classes.
+* Implicit narrowing does NOT happen during method invocation (overload selection). This includes constructors. For example, `new Short(9)` will **NOT** compile, but `new Short((short)9)` will compile.
 * Operands of math operators are **ALWAYS** promoted to at least `int`. (ex: `byte * byte` will result in an `int`)
 * All compound assignment operators (ex: `+=`, `*=`, etc...) internally do an explicit cast. (i.e. `s += i` equal to `s = (short)s + (short)i` where `s` is a `short` and `i` is an `int`)
-* Implicit narrowing does NOT happen during method invocation (overload selection). This includes constructors. For example, `new Short(9)` will **NOT** compile, but `new Short((short)9)` will compile.
 * The `instanceof` operator only works on reference types; not primitives.
 * The result of an expression involving **ONLY** values of type `int`, will always be an `int` (including division). Therefore, the resulting value can be stored in a variable of type `int`, `long`, `float`, or `double`; as those types can all accommodate values of type `int` via implicit widening.
 * `Math.round` returns `int` or `long` when given a `float` or `double` respectively.
@@ -97,6 +97,7 @@
 ## Enums
 * An enum ctor is always implicitly `private`. You cannot make it `public` or `protected`.
 * Enum value constants must always be declared before anything else.
+* Enums are final (i.e. cannot be inherited) and also cannot inherit from other types, because they implicitly inherit from the `Enum` abstract class. However, they can implement any number of interfaces.
 
 ---
 ## Records
@@ -147,7 +148,7 @@
 * A regular `try-catch` block requires either a `catch` or `finally` clause (or both). A `try-with-resources` block does **NOT** require a `catch` or `finally` clause.
 * Be sure that classes that are initialized in a `try-with-resources` initialization clause implement `AutoCloseable`.
 * Resources initialized via a `try-with-resources` block must be effectively `final`, if using a previously declared variable for the specified resource.  In other words, you cannot initialize a previously declared variable within the `try-with-resources` initialization clause. It must be initialized before the `try-with-resources` block.  To initialize the resource without previously declaring it, it must be declared within the `try-with-resources` initializer clause.
-* Resources initialized in a `try-with-resources` block are closed before the `catch` or `finally` blocks are executed; and any exceptions thrown during their closing are suppressed and available via the `getSuppressed()` method (inherited from `Throwable`).
+* Resources initialized in a `try-with-resources` block are closed before the `catch` or `finally` blocks are executed; and any exceptions thrown during their closing are suppressed and available via the `getSuppressed()` method on the caught exception (inherited from `Throwable`).
 * When overriding a method, the method can only declare no exceptions to be thrown **OR** declare that the same exceptions as, or any subclasses of, the overridden method's exceptions are thrown.
 * When defining a ctor of a subclass, the ctor **MUST** declare that it throws the same (or superclasses of) exceptions of the superclass' ctor. If it declares the aforementioned exceptions in its throws-clause, it can declare any other exceptions.  The reason for this is that the ctor of a subclass is usually called explicitly, instead of through a virtual call on a variable instance declared as a supertype of a set of other subclasses. For example, in `Book b = new Encyclopedia(); b.getName();`, the ctor for `Encyclopedia` is being called explicitly, whereas the `getName` method might be overridden in `Encyclopedia` and thus could be a virtual call. In this example, the ctor of `Encyclopedia` must call the ctor of `Book` and thus it must declare the same (or supers of) exceptions as the `Book` ctor. On the other hand, to facilitate polymorphism, the rule for methods is the opposite (same exceptions or subclasses of overridden method); because it enables consumers to reference the super types while still maintaining exceptional determinism.
 
@@ -160,19 +161,9 @@
 ---
 ## Arrays and Collections
 * Collections can only contain reference types; not primitives. (ex: `List<Integer>` is valid, but `List<int>` is **NOT** valid)
-* Array size can only be pre-defined in the initializer (right side); not on the variable declaration (left side). Also, you cannot use an initializer block when the size is pre-defined.
-  ```java
-  /* Example: The following is invalid and will NOT compile, because the size is specified and an initializer is used: */
-  String[] sa = new String[3]{ "a", "b", "c"}; // invalid and will not compile
-  ```
-* Array has a `length` **property** (**NOT** a `length()` method or `size()` method).
 * Collections typically have a `size()` method (**NOT** `length()`)
 * The `indexOf` method on Collections typically takes a parameter of type `Object`. So any type can be passed to it. The same goes for the `contains` method.
-* `Arrays.compare` returns zero if the given arrays are equal and contain the same elements in the same order; a value less than zero if the first array is lexicographically less than the second array; and a value greater than zero if the first array is lexicographically greater than the second array.
-* `Arrays.mismatch` finds and returns the index of the first mismatch between two int arrays, otherwise returns `-1` if no mismatch is found.
-* When you split a `Spliterator`, the first half of the elements goes to the resulting (new) `Spliterator` while the remaining half remains with the origininal one.
-* The `Spliterator` class has a `forEachRemaining` method; which iterates over the remaining elements referenced by the `Spliterator`.
-* In order to sort collections, the element type must implement the `Comparable` interface.  Calling the `sort` method on collections of elements whose type doesn't implement `Comparable` will throw a `ClassCastException` at run time.
+* Array has a `length` **property** (**NOT** a `length()` method or `size()` method).
 * You cannot use brackets `[]` alongside the `var` keyword in variable declaration.
   ```java
   var i[] = new int[]; // INVALID
@@ -183,6 +174,18 @@
   var i = {1, 2, 3} // INVALID
   var i = new int[] {1, 2, 3} // VALID
   ```
+* Array size can only be pre-defined in the initializer (right side); not on the variable declaration (left side). Also, you cannot use an initializer block when the size is pre-defined.
+  ```java
+  String [3] sa = new String[]; // INVALID
+  String [] sa = new String[3]; // VALID
+  /* The following is invalid and will NOT compile, because the size is specified and an initializer is used: */
+  String[] sa = new String[3]{ "a", "b", "c"}; 
+  ```
+* `Arrays.compare` returns zero if the given arrays are equal and contain the same elements in the same order; a value less than zero if the first array is lexicographically less than the second array; and a value greater than zero if the first array is lexicographically greater than the second array.
+* `Arrays.mismatch` finds and returns the index of the first mismatch between two int arrays, otherwise returns `-1` if no mismatch is found.
+* When you split a `Spliterator`, the first half of the elements goes to the resulting (new) `Spliterator` while the remaining half remains with the origininal one.
+* The `Spliterator` class has a `forEachRemaining` method; which iterates over the remaining elements referenced by the `Spliterator`.
+* In order to sort collections, the element type must implement the `Comparable` interface.  Calling the `sort` method on collections of elements whose type doesn't implement `Comparable` will throw a `ClassCastException` at run time.
 * The `List.sort` method requires that a comparator be specified via its first param. There is NO parameterless overload of this method.
 * The `ArrayList` class has a `removeIf` method that takes a predicate which removes all elements that satisfy the predicate provided via its first argument.
 * Queue & Deque (double-ended queue) Common Methods:
@@ -201,17 +204,18 @@
 * Look for trick questions with streams that don't end in a terminal operation; asking what the output will be. There will be **NO** output, because a terminal operation is required to execute the stream and any of its intermediate operations.
 * In parallel streams, the identity value provided to a `reduce` operation may be used an unknown number of times as part of the calculation, because a parallel stream may be split into unknown number of sub-streams and executed independently and thus the number of times the identity value is used is dependent on how many sub-streams are spun up.
 * The specialized primitive streams (ex: `IntStream`) have a `mapToObj` method, which can be used to access some generic `Stream` methods that aren't available on the original, specialized stream. They also have a `boxed` method that essentially does the same, but without specifying a mapping function.
+* The specialized primitive streams do **NOT** have a `collect` method that takes a `Collector`. Use the `mapToObj` or `boxed` methods to gain access to the `collect` method.
 * The specialized primitive streams have reducing methods, such as `average`, which return an `Optional`. (ex: `IntStream.average` returns an `OptionalDouble`). Therefore, to get the resulting primitive value, one must call the `getAsDouble` method on the returned `OptionalDouble` value.
   ```java
   double average = nums.parallel().mapToDouble(i->i).average().getAsDouble();  // VALID
   OptionalDouble average = nums.parallel().mapToDouble(i->i).average(); // ALSO VALID
   double average = nums.parallel().mapToDouble(i->i).average(); // INVALID, will NOT compile
   ```
-* The specialized primitive streams do **NOT** have a `collect` method that takes a `Collector`. Use the `mapToObj` or `boxed` methods to gain access to the `collect` method.
 * The specialized primitive streams do **NOT** have a `parallelStream` method. They **DO** have a `parallel` method that converts the stream to a parallel stream.
 * Calling `sorted()` on unlimited streams cause an `OutOfMemoryError` to be thrown, because it will accumulate an infinite call stack.
   ```java
-  LongStream.generate(() -> ThreadLocalRandom.current().nextLong() % 100).sorted(); // OutOfMemoryError will be thrown
+  /* OutOfMemoryError will be thrown when the below statement is executed. */
+  LongStream.generate(() -> ThreadLocalRandom.current().nextLong() % 100).sorted();
   ```
 * Both index params for IntStream.rangeClosed are **INCLUSIVE**; whereas the ending index param for IntStream.range (default impl) is **EXCLUSIVE**.
 * Look for trick questions where a "reader" stream is being passed to a "writer" constructor.
@@ -228,7 +232,7 @@
 * `Period` is used to manipulate dates in terms of days, months, and years; while `Duration` is used to manipulate dates in terms of hours, minutes, and seconds. Therefore, `Period` doesn't affect the time component of the date while `Duration` may change the time component if the date is close to the DST boundary.
 * When using a `DateTimeFormatter` and a custom format string, to get the calendar year, use lower case `y`.  Upper case `Y` is used to output the week year.
 * Pay close attention to invalid formatters being used when formatting date-type objects.  For example, you cannot use `DateTimeFormatter.ISO_DATE_TIME` to format a `LocalDate` instance, because `LocalDate` does not contain a time component.
-* Applying a zone or offset to a date/time does not change the time component. It only sets the zone ID or offset of the date/time value. For example, the result of `LocalDateTime.atZone(ZoneId.of("America/New_York"))` will only set the timezone and the time (i.e. the hour/minute values) will remain the same. So, a date/time with an offset of `-4` applied will come before that same date/time with an offset of `-5` applied (ex: 6AM at `-4` is before 6AM at `-5`).
+* Applying a zone or offset to a date/time does not change the time component. It only sets the zone ID or offset of the date/time value. For example, the result of `LocalDateTime.atZone(ZoneId.of("America/New_York"))` will only set the timezone. The time (i.e. the hour/minute values) will remain the same. So, a date/time with an offset of `-4` applied will come before that same date/time with an offset of `-5` applied (ex: 6AM at `-4` is before 6AM at `-5`).
 
 ---
 ## Threads
@@ -248,11 +252,21 @@
 
 ---
 ## IO, Files, and Paths
+* To obtain an instance of the `Path` class, use the static factory method `get` on the `Paths` class (ex: `var myPath = Paths.get("/temp");`); or the various instance methods on other related classes such as the `File` class' `toPath` method.
 * `Path.getRoot()` returns the slash (because on unix based systems, an empty string would be returned if it didn't include the slash)
+  ```java
+  // On Windows:
+  var foo = Paths.get("C:\\temp");
+  System.out.println(foo.getRoot()); // outputs `C:\`
+
+  // On Nix:
+  var bar = Paths.get("/temp");
+  System.out.println(bar.getRoot()); // outputs `/`
+  ```
 * The `File` class is immutable.
 * To obtain an instance of the Console object, call `System.console()`. Remember that `java.io.Console` is a singleton class and all of its constructors are `private`.
-* `PrintWriter` does not have `write<Primitive>` methods such as `writeInt`, `writeBoolean`, and `writeLong`. It has overloaded `print` methods for writing various primitives.
-* Remember that none of `PrintWriter`'s `print` or `write` methods throw I/O exceptions (although some of its constructors may). This is unlike other streams, where you need to include exception handling (i.e. a try/catch or throws clause) when you use the stream. It does have `checkError`, `clearError`, and `setError` methods for general error handling purposes.
+* `PrintWriter` does **NOT** have `write[Primitive]` methods such as `writeInt`, `writeBoolean`, and `writeLong`. It has overloaded `print` methods for writing various primitives.
+* Remember that the `PrintWriter`'s `print` and `write` (and variants thereof) methods do **NOT** throw I/O exceptions (although some of its constructors may). This is unlike other streams, where you need to include exception handling (i.e. a try/catch or throws clause) when you use the stream. It does have `checkError`, `clearError`, and `setError` methods for general error handling purposes.
 * Glob pattern syntax
   * `*.java` : Matches a path that represents a file name ending in `.java`
   * `*.*` : Matches file names containing a dot
@@ -261,9 +275,9 @@
 
 ---
 ## Java Modules
-* Module directories are not exploded. In other words, the output of compiling a module named `x.y` will be in a folder called `x.y` (ex: `C:\temp\x.y\Main.class`). The same goes for compilation input paths.
-* A module cannot specify more than one `provides` directive, in its module declaration, that specifies the same service. In other words, it can only provide a **SINGLE** implementation for any service via the module declaration.
-* You cannot have multiple `exports` statements specifying the same package.
+* Module directories are **NOT** exploded. In other words, the output of compiling a module named `x.y` will be in a folder called `x.y` (ex: `C:\temp\x.y\Main.class`). The same goes for compilation input paths.
+* A module **CANNOT** specify more than one `provides` directive, in its module declaration, that specifies the **SAME** service. In other words, it can only provide a **SINGLE** implementation for any service via the module declaration.
+* You **CANNOT** have multiple `exports` statements specifying the same package.
 * The `java.util` package(s) (among others) are provided by the standard module `java.base`.
 * The `java.base` module is always listed as a dependency of all classes/modules by the various standard Java command line tools.
 
